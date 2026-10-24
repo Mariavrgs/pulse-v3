@@ -1,0 +1,22 @@
+{
+  "name": "@pulse/worker",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../.env src/main.ts",
+    "start": "tsx --env-file-if-exists=../../.env src/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pulse/db": "workspace:*",
+    "@pulse/shared": "workspace:*",
+    "bullmq": "^5.0.0",
+    "ioredis": "^5.0.0",
+    "pino": "^10.0.0",
+    "undici": "^7.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "pulse",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Uptime and performance monitoring platform",
+  "packageManager": "pnpm@12.14.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "infra:up": "docker compose up -d --wait",
+    "infra:down": "docker compose down",
+    "check": "pnpm db:generate && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test",
+    "db:generate": "pnpm --filter @pulse/db generate",
+    "dev:api": "pnpm --filter @pulse/api dev",
+    "dev:worker": "pnpm --filter @pulse/worker dev"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@types/node": "^22.0.0",
+    "eslint": "^10.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "~6.0.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^5.0.0"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // Zod and Prisma both model optional fields as `T | undefined`, which this flag rejects.
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["src"]
+}

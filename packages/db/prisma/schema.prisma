@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum HttpMethod {
+  GET
+  HEAD
+}
+
+enum ServiceStatus {
+  UNKNOWN
+  UP
+  DEGRADED
+  DOWN
+}
+
+enum CheckErrorType {
+  TIMEOUT
+  CONNECTION
+  DNS
+  BLOCKED_TARGET
+  UNEXPECTED_STATUS
+  INVALID_RESPONSE
+  INTERNAL
+}
+
+enum IncidentType {
+  DOWNTIME
+  DEGRADATION
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  services      Service[]
+  refreshTokens RefreshToken[]
+}
+
+model Service {
+  id      String @id @default(uuid()) @db.Uuid
+  ownerId String @db.Uuid
+
+  name              String
+  url               String
+  method            HttpMethod @default(GET)
+  expectedStatusMin Int        @default(200)
+  expectedStatusMax Int        @default(299)
+  intervalSeconds   Int        @default(60)
+  timeoutMs         Int        @default(10000)
+
+  /// Latency above this counts as "slow". Null disables degradation detection.
+  degradedLatencyMs Int?
+  failureThreshold  Int  @default(3)
+  recoveryThreshold Int  @default(2)
+  degradedThreshold Int  @default(3)
+
+  isActive Boolean @default(true)
+
+  /// Derived state, maintained by the worker's incident engine.
+  status               ServiceStatus @default(UNKNOWN)
+  consecutiveFailures  Int           @default(0)
+  consecutiveSuccesses Int           @default(0)
+  consecutiveSlow      Int           @default(0)
+
+  /// Scheduler cursor: the worker claims services whose nextCheckAt <= now().
+  nextCheckAt   DateTime  @default(now()) @db.Timestamptz(3)
+  lastCheckedAt DateTime? @db.Timestamptz(3)
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  owner     User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  checks    CheckResult[]
+  incidents Incident[]
+
+  @@index([isActive, nextCheckAt])
+  @@index([ownerId])
+}
+
+model CheckResult {
+  id        BigInt   @id @default(autoincrement())
+  serviceId String   @db.Uuid
+  checkedAt DateTime @db.Timestamptz(3)
+
+  success      Boolean
+  statusCode   Int?
+  durationMs   Int?
+  errorType    CheckErrorType?
+  errorMessage String?
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId, checkedAt(sort: Desc)])
+}
+
+model Incident {
+  id         String       @id @default(uuid()) @db.Uuid
+  serviceId  String       @db.Uuid
+  type       IncidentType
+  startedAt  DateTime     @db.Timestamptz(3)
+  resolvedAt DateTime?    @db.Timestamptz(3)
+  /// Short human-readable summary of the check that opened the incident.
+  trigger    String?
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId, startedAt(sort: Desc)])
+  // Not expressible in Prisma: a partial unique index ("one open incident per service")
+  // lives in the migration SQL. See migrations/20261020000000_init/migration.sql.
+}
+
+model RefreshToken {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+
+  /// SHA-256 of the opaque token. The token itself is never stored.
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

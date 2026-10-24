@@ -1,0 +1,17 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Supply-chain policy: never install a release younger than 14 days (value in minutes).
+# Applies to direct and transitive dependencies; pnpm picks the newest eligible version.
+minimumReleaseAge: 20160
+
+# pnpm blocks dependency build scripts by default. Prisma needs its postinstall to fetch
+# the schema engine; esbuild (used by tsx) verifies its platform binary.
+allowBuilds:
+  "@prisma/engines": true
+  prisma: true
+  esbuild: true
+  # Optional native accelerator for msgpackr (used by BullMQ). The pure-JS fallback is used instead,
+  # so we do not run its install script.
+  msgpackr-extract: false

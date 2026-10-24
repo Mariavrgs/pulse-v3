@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "noEmit": true },
+  "include": ["src", "prisma.config.ts"],
+  "exclude": ["src/generated"]
+}
